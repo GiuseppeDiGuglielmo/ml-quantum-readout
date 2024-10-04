@@ -7,11 +7,10 @@ void NN(
     hls::stream<input_t> &fc1_input,
     hls::stream<result_t> &layer5_out
 ) {
-	#pragma HLS INLINE off
 
     // hls-fpga-machine-learning insert IO
     #pragma HLS INTERFACE axis port=fc1_input,layer5_out 
-    #pragma HLS DATAFLOW
+    #pragma HLS DATAFLOW 
 
 #ifndef __SYNTHESIS__
     static bool loaded_weights = false;

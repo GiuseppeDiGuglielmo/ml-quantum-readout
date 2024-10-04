@@ -1,7 +1,7 @@
 AcceleratorConfig:
   Board: zcu216
-  Driver: c
-  Interface: axi_master
+  Driver: python
+  Interface: axi_stream
   Precision:
     Input: float
     Output: float
@@ -19,13 +19,11 @@ HLSConfig:
     fc1:
       Precision:
         result: ap_fixed<17,17>
-      ReuseFactor: 64
-      Strategy: Resource
       Trace: true
       accum_t: ap_fixed<17,17>
     fc1_input:
       Precision: ap_fixed<14,14>
-      Trace: true
+      Trace: false
     fc1_relu:
       Precision:
         result: ap_fixed<17,17>
@@ -41,8 +39,9 @@ HLSConfig:
       Trace: true
   Model:
     Precision: ap_fixed<16,6>
-    ReuseFactor: 1
-IOType: io_parallel
+    ReuseFactor: 64
+    Strategy: Resource
+IOType: io_stream
 InputData: null
 KerasModel: !keras_model '../hls4ml_projects/sl-100_ws-400/keras_model.h5'
 OutputDir: ../hls4ml_projects/sl-100_ws-400

@@ -1,7 +1,7 @@
-#ifndef MYPROJECT_BRIDGE_H_
-#define MYPROJECT_BRIDGE_H_
+#ifndef NN_BRIDGE_H_
+#define NN_BRIDGE_H_
 
-#include "firmware/myproject_axi.h"
+#include "firmware/NN_axi.h"
 #include "firmware/nnet_utils/nnet_helpers.h"
 #include <algorithm>
 #include <map>
@@ -52,7 +52,7 @@ void collect_trace_output(struct trace_data *c_trace_outputs) {
 }
 
 // Wrapper of top level function for Python bridge
-void myproject_float(
+void NN_float(
     float fc1_input[N_IN],
     float layer5_out[N_OUT]
 ) {
@@ -62,12 +62,12 @@ void myproject_float(
 
     output_axi_t layer5_out_ap[N_OUT];
 
-    myproject_axi(fc1_input_ap,layer5_out_ap);
+    NN_axi(fc1_input_ap,layer5_out_ap);
 
     nnet::convert_data<output_axi_t, float, N_OUT>(layer5_out_ap, layer5_out);
 }
 
-void myproject_double(
+void NN_double(
     double fc1_input[N_IN],
     double layer5_out[N_OUT]
 ) {
@@ -76,7 +76,7 @@ void myproject_double(
 
     output_axi_t layer5_out_ap[N_OUT];
 
-    myproject_axi(fc1_input_ap,layer5_out_ap);
+    NN_axi(fc1_input_ap,layer5_out_ap);
 
     nnet::convert_data<output_axi_t, double, N_OUT>(layer5_out_ap, layer5_out);
 }
