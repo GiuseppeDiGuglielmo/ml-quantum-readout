@@ -17,14 +17,14 @@ typedef float output_qick_t;
 //typedef float output_t;
 
 void NN_axi(
-		input_qick_t &in,
-		output_qick_t out[BUFFER_SIZE],
-		bool trigger,
-		unsigned *window_size,
-		unsigned *window_offset,
-		unsigned *scaling_factor,
-		unsigned *trigger_delay,
-		unsigned *ou_buffer_head
-		);
+        input_qick_t &in,
+        output_qick_t out[BUFFER_SIZE],
+        bool trigger,
+        unsigned *window_size,
+        unsigned *window_offset,
+        unsigned *scaling_factor,
+        unsigned *trigger_delay,
+        unsigned *ou_buffer_head
+        );
 
 #endif
