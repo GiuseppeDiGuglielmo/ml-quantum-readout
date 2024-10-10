@@ -8,7 +8,7 @@
 
 //static const unsigned N_IQ_IN = 770; // 770 (I,Q)
 static const unsigned N_IQ_WINDOW_IN = 400;
-static const unsigned N_OUT = 2;
+static const unsigned N_OUT = 1;
 //static const unsigned N_CONFIGS = 2;
 static const unsigned BUFFER_SIZE = N_OUT * 16384; // 1 * 16384 * 4B = 64KB
 

@@ -10,7 +10,7 @@
 // Prototype of top level function for C-synthesis
 bool NN(
     hls::stream<input_t> &fc1_input,
-    hls::stream<result_t> &layer5_out
+    hls::stream<result_t> &layer6_out
 );
 
 #endif

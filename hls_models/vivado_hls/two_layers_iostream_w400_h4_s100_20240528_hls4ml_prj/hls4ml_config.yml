@@ -1,0 +1,52 @@
+AcceleratorConfig:
+  Board: zcu216
+  Driver: python
+  Interface: axi_stream
+  Precision:
+    Input: float
+    Output: float
+Backend: VivadoAccelerator
+ClockPeriod: 3.225
+HLSConfig:
+  LayerName:
+    batchnorm1:
+      Precision:
+        bias: ap_fixed<24,4>
+        result: ap_fixed<24,4>
+        scale: ap_fixed<24,4>
+      Trace: true
+      accum_t: ap_fixed<24,4>
+    fc1:
+      Precision:
+        result: ap_fixed<18,17>
+      Trace: true
+      accum_t: ap_fixed<18,17>
+    fc1_input:
+      Precision: ap_fixed<14,14>
+      Trace: false
+    fc1_relu:
+      Precision:
+        result: ap_fixed<18,17>
+      Trace: true
+    fc2:
+      Precision:
+        result: ap_fixed<8,5>
+      Trace: true
+      accum_t: ap_fixed<8,5>
+    fc2_sigmoid:
+      Precision:
+        result: ap_fixed<8,1>
+      Trace: true
+  Model:
+    Precision: ap_fixed<16,6>
+    ReuseFactor: 64
+    Strategy: Resource
+IOType: io_stream
+InputData: null
+KerasModel: !keras_model '../hls4ml_projects/sl-100_ws-400_hn-4_date-20240528/keras_model.h5'
+OutputDir: ../hls4ml_projects/sl-100_ws-400_hn-4_date-20240528
+OutputPredictions: null
+Part: xczu49dr-ffvf1760-2-e
+ProjectName: NN
+Stamp: 67d62cbA
+Version: 1.0.0

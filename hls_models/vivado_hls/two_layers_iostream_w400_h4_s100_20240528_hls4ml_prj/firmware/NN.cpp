@@ -3,26 +3,25 @@
 #include "NN.h"
 #include "parameters.h"
 
-bool __attribute__ ((noinline)) NN(
+bool NN(
     hls::stream<input_t> &fc1_input,
-    hls::stream<result_t> &layer5_out
+    hls::stream<result_t> &layer6_out
 ) {
-#pragma HLS INLINE off
 
     // hls-fpga-machine-learning insert IO
-    #pragma HLS INTERFACE axis port=fc1_input,layer5_out 
+    #pragma HLS INTERFACE axis port=fc1_input,layer6_out 
     #pragma HLS DATAFLOW 
 
 #ifndef __SYNTHESIS__
     static bool loaded_weights = false;
     if (!loaded_weights) {
         // hls-fpga-machine-learning insert load weights
-        nnet::load_weights_from_txt<weight2_t, 6400>(w2, "w2.txt");
-        nnet::load_weights_from_txt<bias2_t, 8>(b2, "b2.txt");
-        nnet::load_weights_from_txt<batchnorm1_scale_t, 8>(s4, "s4.txt");
-        nnet::load_weights_from_txt<batchnorm1_bias_t, 8>(b4, "b4.txt");
-        nnet::load_weights_from_txt<weight5_t, 16>(w5, "w5.txt");
-        nnet::load_weights_from_txt<bias5_t, 2>(b5, "b5.txt");
+        nnet::load_weights_from_txt<weight2_t, 3200>(w2, "w2.txt");
+        nnet::load_weights_from_txt<bias2_t, 4>(b2, "b2.txt");
+        nnet::load_weights_from_txt<batchnorm1_scale_t, 4>(s4, "s4.txt");
+        nnet::load_weights_from_txt<batchnorm1_bias_t, 4>(b4, "b4.txt");
+        nnet::load_weights_from_txt<weight5_t, 4>(w5, "w5.txt");
+        nnet::load_weights_from_txt<bias5_t, 1>(b5, "b5.txt");
         loaded_weights = true;
     }
 #endif
@@ -54,9 +53,16 @@ bool __attribute__ ((noinline)) NN(
     nnet::save_layer_output<layer4_t>(layer4_out, "batchnorm1", N_LAYER_2);
 #endif
 
-    nnet::dense<layer4_t, result_t, config5>(layer4_out, layer5_out, w5, b5); // fc2
+    hls::stream<layer5_t> layer5_out("layer5_out");
+    #pragma HLS STREAM variable=layer5_out depth=1
+    nnet::dense<layer4_t, layer5_t, config5>(layer4_out, layer5_out, w5, b5); // fc2
 #ifndef __SYNTHESIS__
-    nnet::save_layer_output<result_t>(layer5_out, "fc2", N_LAYER_5);
+    nnet::save_layer_output<layer5_t>(layer5_out, "fc2", N_LAYER_5);
+#endif
+
+    nnet::sigmoid<layer5_t, result_t, sigmoid_config6>(layer5_out, layer6_out); // fc2_sigmoid
+#ifndef __SYNTHESIS__
+    nnet::save_layer_output<result_t>(layer6_out, "fc2_sigmoid", N_LAYER_5);
 #endif
 
     return true;

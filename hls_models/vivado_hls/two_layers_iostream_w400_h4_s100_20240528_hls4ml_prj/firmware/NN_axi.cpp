@@ -36,6 +36,7 @@ static void reset_local_buffers(
     OUT_RESET_C: if ((*out_reset) == 255) {
         *k = 0;
         *out_offset = 0;
+// TODO: This may be not necessary
 //        RESET_IN_LOCAL_L: for (unsigned i = 0; i < N_IQ_WINDOW_IN*2; i++) {
 //			#pragma HLS UNROLL
 //            in_local.write(0);
@@ -44,10 +45,10 @@ static void reset_local_buffers(
 //            #pragma HLS UNROLL
 //            out_local.push(0);
 //        }
-        //RESET_OUT_L: for (unsigned i = 0; i < BUFFER_SIZE; i++) {
-		//	#pragma HLS UNROLL
-        //	out[i] = 0;
-        //}
+//        RESET_OUT_L: for (unsigned i = 0; i < BUFFER_SIZE; i++) {
+//			#pragma HLS UNROLL
+//        	out[i] = 0;
+//        }
     }
 }
 #endif
@@ -80,7 +81,7 @@ void NN_axi(
     // Unregistered axis
 	//#pragma HLS INTERFACE axis off port=in
 	// Registered axis
-	#pragma HLS INTERFACE axi register both port=in
+	#pragma HLS INTERFACE axis register both port=in
 
     #pragma HLS INTERFACE bram depth=4294967295 latency=1 port=out
     #pragma HLS INTERFACE ap_none port=trigger
