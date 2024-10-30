@@ -3,11 +3,11 @@
 #################
 array set opt {
     reset      0
-    csim       1
+    csim       0
     synth      1
-    cosim      1
-    validation 1
-    export     0
+    cosim      0
+    validation 0
+    export     1
     vsynth     0
     fifo_opt   0
 }
@@ -19,7 +19,7 @@ proc remove_recursive_log_wave {} {
     set tcldir [file dirname [info script]]
     source [file join $tcldir project.tcl]
 
-    set filename ${project_name}_prj/solution1/sim/verilog/${project_name}.tcl
+    set filename ${project_name}_prj/solution1/sim/verilog/${project_name}_axi.tcl
     set timestamp [clock format [clock seconds] -format {%Y%m%d%H%M%S}]
     set temp     $filename.new.$timestamp
     # set backup   $filename.bak.$timestamp
@@ -47,7 +47,7 @@ proc add_vcd_instructions_tcl {} {
     set tcldir [file dirname [info script]]
     source [file join $tcldir project.tcl]
 
-    set filename ${project_name}_prj/solution1/sim/verilog/${project_name}.tcl
+    set filename ${project_name}_prj/solution1/sim/verilog/${project_name}_axi.tcl
     set timestamp [clock format [clock seconds] -format {%Y%m%d%H%M%S}]
     set temp     $filename.new.$timestamp
     # set backup   $filename.bak.$timestamp
@@ -151,7 +151,8 @@ if {$opt(reset)} {
 } else {
     open_project ${project_name}_prj
 }
-set_top ${project_name}
+set_top ${project_name}_axi
+add_files firmware/${project_name}_axi.cpp -cflags "-std=c++0x"
 add_files firmware/${project_name}.cpp -cflags "-std=c++0x"
 add_files -tb ${project_name}_test.cpp -cflags "-std=c++0x"
 add_files -tb firmware/weights
@@ -229,7 +230,7 @@ if {$opt(validation)} {
 if {$opt(export)} {
     puts "***** EXPORT IP *****"
     set time_start [clock clicks -milliseconds]
-    export_design -format ip_catalog -version $version
+    export_design -format ip_catalog -rtl verilog -flow syn
     set time_end [clock clicks -milliseconds]
     report_time "EXPORT IP" $time_start $time_end
 }

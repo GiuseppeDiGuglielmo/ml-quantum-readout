@@ -8,7 +8,7 @@ help:
 
 hls:
 	@vim firmware/NN_axi.cpp +16
-	vivado_hls -f build_prj.tcl
+	vitis_hls -f build_prj.tcl
 	@./profile.sh NN_prj/solution1/syn/report/NN_axi_csynth.xml NN_prj/solution1/impl/report/verilog/NN_axi_export.xml > xilinx_com_hls_NN_axi_1_0.log
 .PHONY: hls
 

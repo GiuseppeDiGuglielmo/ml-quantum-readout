@@ -1,26 +1,119 @@
 #include "NN_axi.h"
 
-void NN_axi(input_axi_t in[N_IN], output_axi_t out[N_OUT]) {
+#include <ap_utils.h>
 
-    #pragma HLS INTERFACE axis port=in
-    #pragma HLS INTERFACE axis port=out
+bool load(
+        input_axi_t &in,
+        input_t in_local[N_IQ_WINDOW_IN*2]
+        ) {
+    LOAD_L: for(unsigned i = 0, j = 0; i < N_IQ_WINDOW_IN; i++) {
+        #pragma HLS PIPELINE
+    	ap_uint<32> data_in;
+    	in.read(data_in);
+    	in_local[j++] = data_in.range(15,0) * *scaling_factor;
+    	in_local[j++] = data_in.range(31,16) * *scaling_factor;
+    }
+
+    return true;
+}
+
+
+void NN_axi(
+        input_axi_t &in,
+        output_axi_t out[BUFFER_OUT],
+        bool trigger,
+        unsigned *window_size,
+        unsigned *window_offset,
+        unsigned *scaling_factor,
+        unsigned *out_reset,
+        unsigned *out_offset
+    ) {
+    //#pragma HLS LATENCY min=1
+
+    // Unregistered axis
+	#pragma HLS INTERFACE axis off port=in
+	// Registered axis
+	//#pragma HLS INTERFACE axis register both port=in
+    #pragma HLS INTERFACE bram depth=4294967295 latency=1 port=out
+    #pragma HLS INTERFACE ap_none port=trigger
+	#pragma HLS INTERFACE s_axilite register port=window_size bundle=config
+	#pragma HLS INTERFACE s_axilite register port=window_offset bundle=config
+    #pragma HLS INTERFACE s_axilite register port=scaling_factor bundle=config
+	#pragma HLS INTERFACE s_axilite register port=out_reset bundle=config
+    #pragma HLS INTERFACE s_axilite register port=out_offset bundle=config
     #pragma HLS INTERFACE ap_ctrl_none port=return
 
-    bool is_last = false;
-    input_t in_local[N_IN];
+
+	// I/O buffers of the hls4ml NN module
+    input_t in_local[N_IQ_WINDOW_IN*2];
     result_t out_local[N_OUT];
 
-    for(unsigned i = 0; i < N_IN; i++){
-        #pragma HLS PIPELINE
-        in_local[i] = in[i].data; // Read input with cast
-        is_last |= (in[i].last == 1)? true: false;
-    }
 
-    NN(in_local, out_local);
+    bool load_done = false;
+    bool nn_done = false;
 
-    for(unsigned i = 0; i < N_OUT; i++){
-        #pragma HLS PIPELINE
-        out[i].data = out_local[i]; // Write output with cast
-        out[i].last = (is_last && (i == N_OUT - 1))? true : false;
-    }
+    // Index of the output buffer over AXI-lite / MMIO
+    unsigned k = 0;
+
+    // Always active
+    FOREVER_L: do {
+
+//    	// Reset output buffer over AXI-lite / MMIO
+//        OUT_RESET_C: if ((*out_reset) == 255) {
+//            k = 0;
+//            *out_offset = 0;
+//            RESET_IN_LOCAL_L: for (unsigned i = 0; i < N_IQ_WINDOW_IN*2; i++) {
+//    			#pragma HLS UNROLL
+//                in_local[i] = 0;
+//            }
+//            RESET_OUT_LOCAL_L: for (unsigned i = 0; i < N_OUT; i++) {
+//                #pragma HLS UNROLL
+//                out_local[i] = 0;
+//            }
+//            //RESET_OUT_L: for (unsigned i = 0; i < BUFFER_OUT; i++) {
+//			//	#pragma HLS UNROLL
+//            //	out[i] = 0;
+//            //}
+//        }
+
+        // Trigger for readout data
+        TRIGGER_C: if (trigger) {
+
+        	// If you need you can wait extra clock cycles
+            WINDOW_OFFSET_L: ap_wait_n(*window_offset);
+
+            // Read readout data
+            //LOAD_L: for(unsigned i = 0, j = 0; i < N_IQ_WINDOW_IN; i++) {
+            //    #pragma HLS PIPELINE
+            //	ap_uint<32> data_in;
+            //	in.read(data_in);
+            //	in_local[j++] = data_in.range(15,0) * *scaling_factor;
+            //	in_local[j++] = data_in.range(31,16) * *scaling_factor;
+            //}
+            load_done = load(data_in, in_local);
+
+            // hls4ml NN module
+        	nn_done = NN(in_local, out_local);
+
+        	// Output logits (ground [0], excited [1])
+
+            if (load_done && nn_done) {
+                STORE_L: for(unsigned i = 0; i < N_OUT; i++){
+                	//#pragma HLS PIPELINE
+                    out[k*N_OUT + i] = out_local[i];
+            	}
+            }
+
+        	// Increment and reset index of the output buffer over AXI-lite / MMIO
+        	k++;
+            if (k*N_OUT >= BUFFER_OUT)
+                k = 0;
+
+            // Keep track of the current index via AXI-lite / MMIO
+            *out_offset = k;
+        }
+    } while (true);
 }
+
+
+

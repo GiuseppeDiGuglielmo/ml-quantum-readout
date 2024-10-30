@@ -15,7 +15,7 @@
 #define N_LAYER_5 1
 #define N_LAYER_5 1
 
-#define FIFO_IN_DEPTH 2
+#define FIFO_IN_DEPTH 400
 
 // hls-fpga-machine-learning insert layer-precision
 typedef nnet::array<ap_fixed<14,14>, FIFO_IN_DEPTH> input_t;

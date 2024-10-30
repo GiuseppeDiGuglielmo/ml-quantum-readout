@@ -16,8 +16,8 @@ static bool load(
         LOAD_INNER_L: for(unsigned j = 0; j < input_t::size; ) {
             ap_uint<32> data_in;
             in.read(data_in);
-            ctype[j++] = (typename input_t::value_type(data_in.range(15,0))) * scaling_factor;
-            ctype[j++] = (typename input_t::value_type(data_in.range(31,16))) * scaling_factor;
+            ctype[j++] = (typename input_t::value_type(data_in.range(15,0)));// * scaling_factor;
+            ctype[j++] = (typename input_t::value_type(data_in.range(31,16)));// * scaling_factor;
         }
         in_local.write(ctype);
     }
@@ -25,7 +25,6 @@ static bool load(
     return true;
 }
 
-#ifdef __SYNTHESIS__
 static void reset_local_buffers(
         hls::stream<input_t> &in_local,
         hls::stream<result_t> &out_local,
@@ -33,25 +32,14 @@ static void reset_local_buffers(
         unsigned *out_offset,
         unsigned *k
     ) {
-    OUT_RESET_C: if ((*out_reset) == 255) {
+	#pragma HLS INLINE off
+
+	OUT_RESET_C: if ((*out_reset) == 255) {
         *k = 0;
         *out_offset = 0;
-// TODO: This is not necessary with streaming
-//        RESET_IN_LOCAL_L: for (unsigned i = 0; i < N_IQ_WINDOW_IN*2; i++) {
-//            #pragma HLS UNROLL
-//            in_local.write(0);
-//        }
-//        RESET_OUT_LOCAL_L: for (unsigned i = 0; i < N_OUT; i++) {
-//            #pragma HLS UNROLL
-//            out_local.push(0);
-//        }
-//        RESET_OUT_L: for (unsigned i = 0; i < BUFFER_SIZE; i++) {
-//            #pragma HLS UNROLL
-//            out[i] = 0;
-//        }
     }
 }
-#endif
+
 
 static void store(
         hls::stream<result_t> &out_local,
@@ -66,6 +54,34 @@ static void store(
         out[offset + i] = out_ctype[i].to_float();
     }
 }
+
+static void while_true_core(
+		/* I/O */
+		input_qick_t &in,
+        output_qick_t out[BUFFER_SIZE],
+        unsigned *scaling_factor,
+		/* Local */
+	    hls::stream<input_t> &in_local,
+	    hls::stream<result_t> &out_local,
+		unsigned &k
+        ) {
+	#pragma HLS INLINE off
+
+    bool load_done = false;
+    bool nn_done = false;
+
+    // Read readout data
+    load_done = load(in, in_local, *scaling_factor);
+
+    // hls4ml NN module
+    nn_done = NN(in_local, out_local);
+
+    // Output logits (ground [0], excited [1])
+    if (load_done && nn_done) {
+         store(out_local, k*N_OUT, out);
+    }
+}
+
 
 void NN_axi(
         input_qick_t &in,
@@ -99,16 +115,13 @@ void NN_axi(
     #pragma HLS STREAM variable=in_local depth=1
     #pragma HLS STREAM variable=out_local depth=1
 
-    bool load_done = false;
-    bool nn_done = false;
-
-
     // Index of the output buffer over AXI-lite / MMIO
     unsigned k = 0;
 
     // Always active
 #ifdef __SYNTHESIS__
     FOREVER_L: do {
+#endif
 
         // Reset output buffer over AXI-lite / MMIO
         reset_local_buffers(in_local, out_local, out_reset, out_offset, &k);
@@ -118,18 +131,8 @@ void NN_axi(
 
             // If you need you can wait extra clock cycles
             WINDOW_OFFSET_L: ap_wait_n(*window_offset);
-#endif
 
-            // Read readout data
-            load_done = load(in, in_local, *scaling_factor);
-
-            // hls4ml NN module
-            nn_done = NN(in_local, out_local);
-
-            // Output logits (ground [0], excited [1])
-            if (load_done && nn_done) {
-                store(out_local, k*N_OUT, out);
-            }
+            while_true_core(in, out, scaling_factor, in_local, out_local, k);
 
             // Increment and reset index of the output buffer over AXI-lite / MMIO
             k++;
@@ -138,8 +141,8 @@ void NN_axi(
 
             // Keep track of the current index via AXI-lite / MMIO
             *out_offset = k;
-#ifdef __SYNTHESIS__
         }
+#ifdef __SYNTHESIS__
     } while (true);
 #endif
 }

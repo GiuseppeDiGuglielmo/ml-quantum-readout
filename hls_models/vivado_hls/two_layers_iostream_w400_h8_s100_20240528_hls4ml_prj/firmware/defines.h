@@ -14,8 +14,11 @@
 #define N_LAYER_2 8
 #define N_LAYER_5 2
 
+#define FIFO_IN_DEPTH 2
+
+
 // hls-fpga-machine-learning insert layer-precision
-typedef nnet::array<ap_fixed<14,14>, 800*1> input_t;
+typedef nnet::array<ap_fixed<14,14>, FIFO_IN_DEPTH> input_t;
 typedef ap_fixed<17,17> fc1_accum_t;
 typedef nnet::array<ap_fixed<17,17>, 8*1> layer2_t;
 typedef ap_fixed<6,1> weight2_t;

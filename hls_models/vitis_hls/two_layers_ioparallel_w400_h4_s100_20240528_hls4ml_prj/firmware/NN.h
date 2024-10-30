@@ -9,7 +9,7 @@
 
 
 // Prototype of top level function for C-synthesis
-void NN(
+bool NN(
     input_t fc1_input[N_INPUT_1_1],
     result_t layer5_out[N_LAYER_5]
 );

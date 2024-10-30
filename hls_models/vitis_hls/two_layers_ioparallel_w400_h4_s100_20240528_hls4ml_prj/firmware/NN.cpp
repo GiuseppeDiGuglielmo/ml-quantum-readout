@@ -4,7 +4,7 @@
 #include "parameters.h"
 
 
-void NN(
+bool NN(
     input_t fc1_input[N_INPUT_1_1],
     result_t layer5_out[N_LAYER_5]
 ) {
@@ -59,5 +59,6 @@ void NN(
     nnet::save_layer_output<result_t>(layer5_out, "fc2", N_LAYER_5);
 #endif
 
+    return true;
 }
 

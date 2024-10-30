@@ -30,7 +30,7 @@ struct config2 : nnet::dense_config {
     static const unsigned n_out = 4;
     static const unsigned io_type = nnet::io_stream;
     static const unsigned strategy = nnet::resource;
-    static const unsigned reuse_factor = 50;
+    static const unsigned reuse_factor = 1;
     static const unsigned n_zeros = 173;
     static const unsigned n_nonzeros = 3027;
     static const unsigned multiplier_limit = DIV_ROUNDUP(n_in * n_out, reuse_factor) - n_zeros / reuse_factor;
@@ -48,7 +48,7 @@ struct relu_config3 : nnet::activ_config {
     static const unsigned n_in = 4;
     static const unsigned table_size = 1024;
     static const unsigned io_type = nnet::io_stream;
-    static const unsigned reuse_factor = 64;
+    static const unsigned reuse_factor = 1;
     typedef fc1_relu_table_t table_t;
 };
 
@@ -58,7 +58,7 @@ struct config4 : nnet::batchnorm_config {
     static const unsigned n_filt = -1;
     static const unsigned n_scale_bias = (n_filt == -1) ? n_in : n_filt;
     static const unsigned io_type = nnet::io_stream;
-    static const unsigned reuse_factor = 64;
+    static const unsigned reuse_factor = 1;
     static const unsigned multiplier_limit = DIV_ROUNDUP(n_in, reuse_factor);
     static const bool store_weights_in_bram = false;
     typedef batchnorm1_bias_t bias_t;
@@ -73,7 +73,7 @@ struct config5 : nnet::dense_config {
     static const unsigned n_out = 1;
     static const unsigned io_type = nnet::io_stream;
     static const unsigned strategy = nnet::resource;
-    static const unsigned reuse_factor = 4;
+    static const unsigned reuse_factor = 1;
     static const unsigned n_zeros = 0;
     static const unsigned n_nonzeros = 4;
     static const unsigned multiplier_limit = DIV_ROUNDUP(n_in * n_out, reuse_factor) - n_zeros / reuse_factor;
@@ -91,7 +91,7 @@ struct sigmoid_config6 : nnet::activ_config {
     static const unsigned n_in = 1;
     static const unsigned table_size = 1024;
     static const unsigned io_type = nnet::io_stream;
-    static const unsigned reuse_factor = 64;
+    static const unsigned reuse_factor = 1;
     typedef fc2_sigmoid_table_t table_t;
 };
 
