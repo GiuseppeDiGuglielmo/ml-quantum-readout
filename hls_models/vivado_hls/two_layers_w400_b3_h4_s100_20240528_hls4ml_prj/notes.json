@@ -1,0 +1,1 @@
+{"Keras  Accuracy (with sigmoid)": 0.96071, "Keras  Fidelity (with sigmoid)": 0.9214199999999999, "Keras  Accuracy (w/o sigmoid)": 0.96042, "Keras  Fidelity (w/o sigmoid)": 0.9208400000000001, "HLS Acc": 0.96062, "HLS Fidelity": 0.9212400000000001}
