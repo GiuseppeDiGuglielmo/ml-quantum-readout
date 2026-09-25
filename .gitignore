@@ -159,3 +159,8 @@ notebooks/3*
 tmp*/
 hls4ml_prj/
 *wrapper/
+
+# Data lives on the NAS; these are symlinks (see data/README.md)
+data/fpga_testing
+data/qick_data
+data/qubit_readout_purdue
