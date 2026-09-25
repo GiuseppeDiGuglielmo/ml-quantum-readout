@@ -1,0 +1,50 @@
+Backend: Vitis
+ClockPeriod: 3.225
+ClockUncertainty: 27%
+HLSConfig:
+  LayerName:
+    batchnorm1:
+      Precision:
+        bias: ap_fixed<24,8>
+        result: ap_fixed<24,8>
+        scale: ap_fixed<24,8>
+      Trace: true
+      accum_t: ap_fixed<24,8>
+    fc1:
+      Precision:
+        result: ap_fixed<19,18>
+      Trace: true
+      accum_t: ap_fixed<19,18>
+    fc1_input:
+      Precision: ap_fixed<14,14>
+      Trace: false
+    fc1_relu:
+      Precision:
+        result: ap_fixed<19,18>
+      Trace: true
+    fc2:
+      Precision:
+        result: ap_fixed<10,5>
+      Trace: true
+      accum_t: ap_fixed<10,5>
+    fc2_linear:
+      Precision:
+        result: ap_fixed<10,5>
+      Trace: true
+  Model:
+    Precision: ap_fixed<16,6>
+    ReuseFactor: 64
+    Strategy: Resource
+IOType: io_parallel
+InputData: null
+KerasModel: !keras_model '../hls4ml_projects/sl-100_ws-400_hn-4/keras_model.keras'
+OutputDir: ../hls4ml_projects/sl-100_ws-400_hn-4
+OutputPredictions: null
+Part: xczu49dr-ffvf1760-2-e
+ProjectName: NN
+Stamp: 96e2a31A
+Version: 1.0.0
+WriterConfig:
+  Namespace: null
+  WriteTar: false
+  WriteWeightsTxt: true
