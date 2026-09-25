@@ -136,6 +136,7 @@ hls4ml_prj*/
 zcu216*/
 qkeras*/
 *.tar.gz
+*.zip
 
 # model checkpoints  
 checkpoints/
