@@ -1,0 +1,20 @@
+name: ml4qick-env
+channels:
+  - pytorch
+  - anaconda
+  - conda-forge
+dependencies:
+  - python=3.8
+  - pip 
+  - pip:
+    - git+https://github.com/jicampos/hls4ml.git@qick#egg=hls4ml[profiling]   # v0.8.1, fork with ZCU216 tcl scripts
+    - numpy
+      #==1.20.3
+    - matplotlib
+    - tensorflow 
+    - qkeras==0.9.0
+    - tqdm 
+    - h5py
+    - notebook
+    - pydot 
+    - graphviz
