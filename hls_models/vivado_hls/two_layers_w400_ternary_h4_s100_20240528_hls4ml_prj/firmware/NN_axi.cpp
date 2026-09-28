@@ -4,18 +4,28 @@
 #include "NN_axi.h"
 
 #include <ap_utils.h>
+#include <utils/x_hls_utils.h>
 
 bool load(input_axi_t &in, input_t in_local[N_IQ_WINDOW_IN*2], unsigned *scaling_factor) {
     #pragma HLS INLINE
     // Read readout data
-    LOAD_L: for(unsigned i = 0, j = 1; i < 2*N_IQ_WINDOW_IN; i+=2, j+=2) {
-        #pragma HLS PIPELINE II=1 rewind
+    // No rewind: it made HLS drop the pipeline (NN() is a dataflow region
+    // in the same FOREVER_L body), so LOAD_L ran at II=3
+    LOAD_L: for(unsigned i = 0; i < N_IQ_WINDOW_IN; i++) {
+        #pragma HLS PIPELINE II=1
         ap_uint<32> data_in;
         in.read(data_in);
         input_t lo = data_in.range(13,0); // * *scaling_factor;
         input_t hi = data_in.range(29,16); // * *scaling_factor;
-           in_local[i] = lo;
-           in_local[j] = hi;
+        // Shift the window down by one (I,Q) pair and append the new one:
+        // fixed wiring per element instead of an indexed write into the
+        // reshaped array, which fanned each sample out to all 400 slots
+        SHIFT_L: for(unsigned n = 0; n < 2*N_IQ_WINDOW_IN - 2; n++) {
+            #pragma HLS UNROLL
+            in_local[n] = in_local[n+2];
+        }
+        in_local[2*N_IQ_WINDOW_IN - 2] = lo;
+        in_local[2*N_IQ_WINDOW_IN - 1] = hi;
     }
 
     return true;
@@ -33,7 +43,9 @@ bool store(result_t out_local[N_OUT], output_axi_t out[BUFFER_SIZE], unsigned &k
     return true;
 }
 
-void NN_axi(input_axi_t &in, output_axi_t out[BUFFER_SIZE], bool trigger, unsigned *window_size, unsigned *window_offset, unsigned *scaling_factor, unsigned *out_reset, unsigned *out_offset) {
+// trigger is a volatile reference so HLS re-reads the ap_none port on every
+// FOREVER_L pass; by value (volatile or not) it is read once after reset
+void NN_axi(input_axi_t &in, output_axi_t out[BUFFER_SIZE], volatile bool &trigger, unsigned *window_size, unsigned *window_offset, unsigned *scaling_factor, unsigned *out_reset, unsigned *out_offset) {
 
     // Unregistered axis
     #pragma HLS INTERFACE axis off port=in
@@ -60,6 +72,10 @@ void NN_axi(input_axi_t &in, output_axi_t out[BUFFER_SIZE], bool trigger, unsign
     FOREVER_L: do {
 #endif
 
+        // Sample the trigger port once per iteration, into a register
+        // (a plain copy is folded back into the ap_none port by HLS)
+        bool trig = reg(trigger);
+
         // Reset output buffer over AXI-lite / MMIO
         OUT_RESET_C: if ((*out_reset) == 255) {
             k = 0;
@@ -67,7 +83,7 @@ void NN_axi(input_axi_t &in, output_axi_t out[BUFFER_SIZE], bool trigger, unsign
         }
 
         // Trigger for readout data
-        TRIGGER_C: if (trigger) {
+        TRIGGER_C: if (trig) {
 
             bool load_done = false;
             bool buffer_ff_done = false;
