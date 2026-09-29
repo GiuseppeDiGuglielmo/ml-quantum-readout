@@ -6,13 +6,17 @@
 #include <ap_utils.h>
 #include <utils/x_hls_utils.h>
 
-bool load(input_axi_t &in, input_t in_local[N_IQ_WINDOW_IN*2], unsigned *scaling_factor) {
+// Reads offset + N_IQ_WINDOW_IN samples, one per cycle; the shift register
+// keeps the last N_IQ_WINDOW_IN, so the window starts offset samples after
+// the first read (window_offset counts samples)
+bool load(input_axi_t &in, input_t in_local[N_IQ_WINDOW_IN*2], unsigned offset, unsigned *scaling_factor) {
     #pragma HLS INLINE
     // Read readout data
     // No rewind: it made HLS drop the pipeline (NN() is a dataflow region
     // in the same FOREVER_L body), so LOAD_L ran at II=3
-    LOAD_L: for(unsigned i = 0; i < N_IQ_WINDOW_IN; i++) {
+    LOAD_L: for(unsigned i = 0; i < offset + N_IQ_WINDOW_IN; i++) {
         #pragma HLS PIPELINE II=1
+        #pragma HLS LOOP_TRIPCOUNT min=400 max=770
         ap_uint<32> data_in;
         in.read(data_in);
         input_t lo = data_in.range(13,0); // * *scaling_factor;
@@ -41,6 +45,22 @@ bool store(result_t out_local[N_OUT], output_axi_t out[BUFFER_SIZE], unsigned &k
     }
 
     return true;
+}
+
+// Wait for the trigger or an out_reset request, checking both every cycle
+// (II=1), so the window starts a fixed number of cycles after the trigger
+// edge. A separate module (INLINE off): HLS drops PIPELINE on a loop in
+// FOREVER_L, because FOREVER_L also holds the NN dataflow region
+void wait_trigger(volatile bool &trigger, volatile unsigned *out_reset, bool &trig, bool &reset) {
+    #pragma HLS INLINE off
+    bool t, r;
+    TRIG_WAIT_L: do {
+        #pragma HLS PIPELINE II=1
+        t = trigger;
+        r = (*out_reset == 255);
+    } while (!t && !r);
+    trig = t;
+    reset = r;
 }
 
 // trigger is a volatile reference so HLS re-reads the ap_none port on every
@@ -72,12 +92,11 @@ void NN_axi(input_axi_t &in, output_axi_t out[BUFFER_SIZE], volatile bool &trigg
     FOREVER_L: do {
 #endif
 
-        // Sample the trigger port once per iteration, into a register
-        // (a plain copy is folded back into the ap_none port by HLS)
-        bool trig = reg(trigger);
+        bool trig, reset;
+        wait_trigger(trigger, out_reset, trig, reset);
 
         // Reset output buffer over AXI-lite / MMIO
-        OUT_RESET_C: if ((*out_reset) == 255) {
+        OUT_RESET_C: if (reset) {
             k = 0;
             *out_offset = 0;
         }
@@ -89,10 +108,7 @@ void NN_axi(input_axi_t &in, output_axi_t out[BUFFER_SIZE], volatile bool &trigg
             bool buffer_ff_done = false;
             bool nn_done = false;
 
-            // If you need you can wait extra clock cycles
-            WINDOW_OFFSET_L: ap_wait_n(*window_offset);
-
-            load_done = load(in, in_local, scaling_factor);
+            load_done = load(in, in_local, *window_offset, scaling_factor);
 
             // hls4ml NN module
             nn_done = NN(in_local, out_local);

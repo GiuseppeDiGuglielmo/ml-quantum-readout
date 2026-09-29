@@ -92,9 +92,9 @@ int main(int argc, char **argv) {
 
             bool trigger = true;
             unsigned window_size = 400;
-            unsigned window_offset = 100;
+            unsigned window_offset = 0;   // the 400 samples written are the window
             unsigned scaling_factor = 1;
-            unsigned out_reset;
+            unsigned out_reset = 0;
             unsigned out_offset;
             unsigned trigger_delay;
             // hls-fpga-machine-learning insert top-level-function
@@ -151,9 +151,9 @@ int main(int argc, char **argv) {
 
         bool trigger = true;
         unsigned window_size = 400;
-        unsigned window_offset = 100;
+        unsigned window_offset = 0;   // the 400 samples written are the window
         unsigned scaling_factor = 1;
-        unsigned out_reset;
+        unsigned out_reset = 0;
         unsigned out_offset;
         unsigned trigger_delay;
         NN_axi(fc1_input, layer4_out, trigger, &window_size, &window_offset, &scaling_factor, &out_reset, &out_offset);
